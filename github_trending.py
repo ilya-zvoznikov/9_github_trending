@@ -1,29 +1,51 @@
 import requests
+import datetime
 
 
 def get_trending_repositories(top_size):
-    headers = {
-        'content-type': 'Accept: application/vnd.github.mercy-preview+json',
-    }
+    today = datetime.date.today()
+    delta = datetime.timedelta(days=7)
+
+    headers = {}
     params = {
-        'q': 'created:2019-03-26',
+        'q': 'created:>{}'.format(today - delta),
         'sort': 'stars',
         'order': 'desc',
         'per_page': '20',
     }
-    response = requests.get('https://api.github.com/search/repositories',
-                            headers=headers,
-                            params=params
-                            )
+    response = requests.get(
+        'https://api.github.com/search/repositories',
+        headers=headers,
+        params=params,
+    )
     r = response.json()
-    for item in r['items']:
-        print(item['stargazers_count'])
-        # print(item['created_at'])
+
+    return r['items']
 
 
 def get_open_issues_amount(repo_owner, repo_name):
-    pass
+    headers = {}
+    params = {
+        'state': 'open',
+    }
+    response = requests.get(
+        'https://api.github.com/repos/{}/{}/issues'.format(
+            repo_owner,
+            repo_name,
+        ),
+        headers=headers,
+        params=params,
+    )
 
+    r = response.json()
 
 if __name__ == '__main__':
-    get_trending_repositories(None)
+    repos = get_trending_repositories(None)
+    # get_open_issues_amount(rep['owner']['login'], rep['name'])
+    for repo in repos:
+        print(repo['name'])
+        print(repo['created_at'])
+        print(repo['stargazers_count'])
+        print(repo['open_issues'])
+        print(repo['svn_url'])
+        print()
