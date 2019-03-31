@@ -1,51 +1,44 @@
 import requests
 import datetime
-
+import sys
 
 def get_trending_repositories(top_size):
     today = datetime.date.today()
     delta = datetime.timedelta(days=7)
 
-    headers = {}
     params = {
         'q': 'created:>{}'.format(today - delta),
         'sort': 'stars',
         'order': 'desc',
-        'per_page': '20',
+        'per_page': '{}'.format(top_size),
     }
-    response = requests.get(
-        'https://api.github.com/search/repositories',
-        headers=headers,
-        params=params,
-    )
-    r = response.json()
+    try:
+        response = requests.get(
+            'https://api.github.com/search/repositories',
+            params=params,
+        )
+        repos_dict = response.json()
+    except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ConnectTimeout):
+        return None
 
-    return r['items']
+    return repos_dict['items']
 
 
-def get_open_issues_amount(repo_owner, repo_name):
-    headers = {}
-    params = {
-        'state': 'open',
-    }
-    response = requests.get(
-        'https://api.github.com/repos/{}/{}/issues'.format(
-            repo_owner,
-            repo_name,
-        ),
-        headers=headers,
-        params=params,
-    )
+def print_repos(repos_dict):
+    for repo in repos_dict:
+        print('Repo: {}'.format(repo['name']))
+        print('Created at: {}'.format(repo['created_at']))
+        print('Stars: {}'.format(repo['stargazers_count']))
+        print('Open issues: {}'.format(repo['open_issues']))
+        print('URL to repo: {}'.format(repo['svn_url']))
+        print()
 
-    r = response.json()
 
 if __name__ == '__main__':
-    repos = get_trending_repositories(None)
-    # get_open_issues_amount(rep['owner']['login'], rep['name'])
-    for repo in repos:
-        print(repo['name'])
-        print(repo['created_at'])
-        print(repo['stargazers_count'])
-        print(repo['open_issues'])
-        print(repo['svn_url'])
-        print()
+    top_size = 20
+    repos_dict = get_trending_repositories(top_size)
+    if not repos_dict:
+        sys.exit("Connection error or server doesn't response")
+    print_repos(repos_dict)
