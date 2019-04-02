@@ -27,30 +27,38 @@ def get_trending_repositories(top_size):
     return repos_dict['items']
 
 
+def get_open_issues_on_page(repo_owner, repo_name, page):
+    url_template = 'https://api.github.com/repos/{}/{}/issues'
+
+    params = {
+        'state': 'open',
+        'per_page': '100',
+        'page': '{}'.format(str(page))
+    }
+
+    try:
+        response = requests.get(
+            url_template.format(repo_owner, repo_name),
+            params=params,
+        )
+
+        issues_dict = response.json()
+        return issues_dict
+
+    except (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ConnectTimeout,
+    ):
+        return
+
+
 def get_open_issues_amount(repo_owner, repo_name):
     issues_amount = 0
     page = 1
     while True:
-        params = {
-            'state': 'open',
-            'per_page': '100',
-            'page': '{}'.format(str(page))
-        }
-        try:
-            response = requests.get(
-                'https://api.github.com/repos/{}/{}/issues'.format(
-                    repo_owner,
-                    repo_name,
-                ),
-                params=params,
-            )
-
-            issues_dict = response.json()
-        except (
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ConnectTimeout,
-        ):
-            return None
+        issues_dict = get_open_issues_on_page(repo_owner, repo_name, page)
+        if issues_dict is None:
+            return
 
         if not issues_dict:
             break
